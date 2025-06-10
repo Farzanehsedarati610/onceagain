@@ -1,10 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const paymentRoutes = require('./routes/payment');
-
+const paymentRoutes = require('./routes/payment'); // Make sure it's not repeated
 
 const app = express();
-const paymentRoutes = require('./routes/payment');
 app.use(bodyParser.json());
 app.use('/api/payment', paymentRoutes);
 
