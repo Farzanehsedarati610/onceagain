@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>UKG SSO URL Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f4f4f4; }
+    input, button { padding: 0.5rem; margin: 0.5rem 0; width: 100%; }
+    code { background: #eee; padding: 0.2rem 0.4rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🔐 UKG SSO URL Generator</h1>
+  <p>Generate a secure SSO URL for UKG HR Service Delivery (Document Manager).</p>
+
+  <label>User External ID:</label>
+  <input type="text" id="externalId" placeholder="e.g. fsedarati" />
+
+  <label>Secret Key:</label>
+  <input type="password" id="secretKey" placeholder="your shared secret" />
+
+  <label>UKG Domain:</label>
+  <input type="text" id="domain" placeholder="e.g. yourcompany.safe-access.com" />
+
+  <label>Redirect Path:</label>
+  <input type="text" id="next" value="/api/v1/url/employee/folder" />
+
+  <button onclick="generateSSO()">Generate SSO URL</button>
+
+  <h3>🔗 Result:</h3>
+  <pre id="result"></pre>
+
+  <script>
+    async function generateSSO() {
+      const externalId = document.getElementById('externalId').value;
+      const secretKey = document.getElementById('secretKey').value;
+      const domain = document.getElementById('domain').value;
+      const next = encodeURIComponent(document.getElementById('next').value);
+      const timestamp = Math.floor(Date.now() / 1000).toString();
+
+      const data = externalId + secretKey + timestamp;
+
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secretKey),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+
+      const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+      const hashArray = Array.from(new Uint8Array(signature));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const url = `https://${domain}/remote/v1/access/?external_id=${externalId}&timestamp=${timestamp}&hash=${hashHex}&next=${next}`;
+      document.getElementById('result').textContent = url;
+    }
+  </script>
+</body>
+</html>
+

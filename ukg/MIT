@@ -1,0 +1,19 @@
+
+---
+
+### 3. (Optional) `generate_sso.py` – Your Script
+
+You already have this, but you can upload it to the repo so others can see or use it.
+
+---
+
+## ✅ Next Steps
+
+1. Go to your repo: [github.com/Farzanehsedarati610/ukg](https://github.com/Farzanehsedarati610/ukg)
+2. Click **“Add file” > “Create new file”**
+3. Name it `index.html`, paste the HTML above, and commit
+4. Do the same for `README.md` and `generate_sso.py`
+5. Then go to **Settings > Pages**, and set the source to `main` branch, root folder
+
+GitHub will give you a live site like:
+
