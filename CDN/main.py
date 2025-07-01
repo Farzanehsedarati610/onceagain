@@ -1,5 +1,13 @@
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Request
+from pydantic import BaseModel
+import hashlib
+import json
+import os
+
+app = FastAPI()
+
+# Allow frontend served from localhost:8080
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8080"],
@@ -8,21 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from pydantic import BaseModel
-import hashlib, json
-
-app = FastAPI()
-DATA_FILE = "backend/storage.json"
+DATA_FILE = "storage.json"
 
 class TextInput(BaseModel):
     text: str
 
 def load_data():
-    try:
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    except:
+    if not os.path.exists(DATA_FILE):
         return {"text": "", "hashes": []}
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
 
 def save_data(data):
     with open(DATA_FILE, "w") as f:
@@ -34,17 +37,11 @@ def get_text():
 
 @app.put("/text")
 def update_text(input: TextInput):
-    data = load_data()
-    data["text"] = input.text
-    data["hashes"] = []
+    data = {"text": input.text, "hashes": []}
     for line in input.text.splitlines():
         if "from acct:" in line and "to acct:" in line:
             hash = hashlib.sha256(line.encode()).hexdigest()
             data["hashes"].append({"line": line, "hash": hash})
     save_data(data)
     return {"status": "updated", "hashes": data["hashes"]}
-
-@app.get("/hashes")
-def get_hashes():
-    return load_data().get("hashes", [])
 
