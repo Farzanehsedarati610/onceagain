@@ -1,16 +1,13 @@
 {
-  "name": "financial-transfer-service",
+  "name": "symbolic-transfer-engine",
   "version": "1.0.0",
-  "description": "Automated hash-based financial transaction processor",
-  "main": "server.js",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.2"
-  },
+  "description": "Symbolic transfer engine with WebSocket broadcasting",
+  "main": "symbolic-server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node symbolic-server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
 }
+
