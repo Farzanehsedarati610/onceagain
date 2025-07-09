@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Symbolic Transfer Engine</title>
+  <title>Symbolic Transfer Engine (Live)</title>
   <style>
     body { font-family: monospace; background: #111; color: #0f0; padding: 2em; }
     h2 { color: #0ff; }
@@ -9,13 +9,12 @@
   </style>
 </head>
 <body>
-  <h2>Symbolic USD Transfer System (∞)</h2>
-  <pre id="output">Initializing symbolic engine...</pre>
+  <h2>Live Symbolic USD Transfers</h2>
+  <pre id="output">Connecting to symbolic server...</pre>
 
   <script>
     const routing = "283977688";
     const account = "0000339715";
-    const memory = {};
     const output = [];
 
     const symbolicHashes = {
@@ -40,11 +39,6 @@
       s: "65a6745f084e7af17e1715ae9302cc14820e331af610badd3d9805cb9cd3504e"
     };
 
-    function extractUSD(hash, scale = 10) {
-      const base = parseInt(hash.slice(0, 16), 16);
-      return ((base % 1_000_000_000) / 100) * scale;
-    }
-
     function fma(x, y, z) {
       return (x * y) + z;
     }
@@ -55,56 +49,34 @@
       return { intPart, fracPart };
     }
 
-    function writeToLedger(block) {
-      const ledger = JSON.parse(localStorage.getItem("ledger") || "[]");
-      ledger.push(block);
-      localStorage.setItem("ledger", JSON.stringify(ledger));
+    function extractUSD(hash) {
+      const base = parseInt(hash.slice(0, 32), 16);
+      return (base % 1_000_000_000_000) / 100;
     }
 
-    function writeToFileSystem(block) {
-      const fileKey = `file_${block.routing}_${block.account}`;
-      const file = JSON.parse(localStorage.getItem(fileKey) || "[]");
-      file.push(block);
-      localStorage.setItem(fileKey, JSON.stringify(file));
-    }
+    // Connect to WebSocket server
+    const socket = new WebSocket("ws://localhost:3000"); // Change to wss://your-server.com if deployed
 
-    async function autoExecuteTransfers() {
-      let counter = 0;
+    socket.onmessage = function(event) {
+      const block = JSON.parse(event.data);
+      output.push(`📡 ${block.label}: $${block.usd.toLocaleString(undefined, {minimumFractionDigits: 2})} → ${block.routing}/${block.account}`);
+      document.getElementById("output").textContent = output.slice(-100).join("\n");
+    };
+
+    // Optional fallback: loop through hashes locally
+    let counter = 0;
+    setInterval(() => {
       const keys = Object.entries(symbolicHashes);
+      const [label, hash] = keys[counter % keys.length];
+      const usd = extractUSD(hash);
+      const adjusted = fma(usd, Math.pow(1.01, counter), 1000);
+      const { intPart, fracPart } = modf(adjusted);
 
-      while (true) {
-        const [label, hash] = keys[counter % keys.length];
-        const usd = extractUSD(hash);
-        const adjusted = fma(usd, 1.01, 0.25);
-        const { intPart, fracPart } = modf(adjusted);
+      output.push(`🔁 ${label.toUpperCase()}: $${adjusted.toLocaleString(undefined, {minimumFractionDigits: 2})} → ${routing}/${account}`);
+      document.getElementById("output").textContent = output.slice(-100).join("\n");
 
-        const block = {
-          label,
-          hash,
-          usd: adjusted,
-          routing,
-          account,
-          integerUSD: intPart,
-          fractionalUSD: fracPart.toFixed(2),
-          timestamp: new Date().toISOString()
-        };
-
-        const memKey = `${routing}:${account}`;
-        memory[memKey] = memory[memKey] || [];
-        memory[memKey].push(block);
-
-        writeToLedger(block);
-        writeToFileSystem(block);
-
-        output.push(`✅ ${label.toUpperCase()}: $${adjusted.toFixed(2)} → ${routing}/${account}`);
-        document.getElementById("output").textContent = output.slice(-100).join("\n");
-
-        counter++;
-        await new Promise(r => setTimeout(r, 100)); // throttle
-      }
-    }
-
-    autoExecuteTransfers();
+      counter++;
+    }, 1000);
   </script>
 </body>
 </html>
